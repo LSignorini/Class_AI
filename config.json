@@ -1,0 +1,30 @@
+{
+    "io": {
+        "training_folder": "\\Animal\\train",
+        "validation_folder":"\\Animal\\val",
+        "test_folder": "\\Animal\\test",
+        "use_custom_generator" : false
+    },
+    "parameters": {
+        "train": true,
+        "test": true,
+        "show_preview": false
+    },
+    "hyper_parameters": {
+        "batch_size": 20,
+        "epochs": 250,
+        "learning_rate": 0.0001,
+        "momentum": 0.9
+    },    
+    "early_stop_parameters": {
+        "patience": 20
+    },
+    "save_model_parameters": {
+        "save_model": true,
+        "load_model_tr": false,
+        "load_model_te": true,
+        "evaluation_perc": 0.2,
+        "loss_limit": 1.5
+    }
+        
+}

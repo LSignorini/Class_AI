@@ -1,0 +1,108 @@
+{
+    "type" : "object",
+    "required" : ["io", "parameters", "hyper_parameters", "early_stop_parameters", "save_model_parameters"],
+    "properties" : {
+        "io" : {
+            "type" : "object",
+            "required" : [
+                "training_folder",
+                "test_folder",
+                "use_custom_generator"
+            ],
+            "properties" : {
+                "training_folder" : {"type" : "string"},
+                "validation_folder" : {"type" : "string"},
+                "test_folder" : {"type" : "string"},
+                "use_custom_generator" : {"type" : "boolean"}
+            }
+        },
+        "parameters" : {
+            "type" : "object",
+            "required" : [
+                "train",
+                "test",
+                "show_preview"
+            ], 
+            "properties" : {
+                "train" : {"type" : "boolean"},
+                "test" : {"type" : "boolean"},
+                "show_preview" : {"type" : "boolean"}
+            }
+        },
+        "hyper_parameters" : {
+            "type" : "object",
+            "required" : [
+                "batch_size",
+                "epochs",
+                "learning_rate",
+                "momentum"
+            ],
+            "properties" : {
+                "batch_size" : {
+                    "type" : "number",
+                    "minimum" : 0,
+                    "maximum" : 128
+                },
+                "epochs" : {
+                    "type" : "number",
+                    "minimum" : 1,
+                    "maximum" : 1000
+                },
+                "learning_rate" : {
+                    "type" : "number",
+                    "minimum" : 0.000001,
+                    "maximum" : 100
+                },
+                "momentum" : {
+                    "type" : "number",
+                    "minimum" : 0.000001,
+                    "maximum" : 100
+                }
+            }
+        },
+        "early_stop_parameters" : {
+            "type" : "object",
+            "required" : [
+                "patience"
+            ],
+            "properties" : {
+                "patience" : {
+                    "type" : "number",
+                    "minimum" : 0,
+                    "maximum" : 128
+                }
+            }
+        },
+        "save_model_parameters" : {
+            "type" : "object",
+            "required" : [
+                "save_model",
+                "load_model_tr",
+                "load_model_te",
+                "evaluation_perc",
+                "loss_limit"
+            ],
+            "properties" : {
+                "save_model" : {
+                    "type" : "boolean"
+                },
+                "load_model_tr" : {
+                    "type" : "boolean"
+                },
+                "load_model_te" : {
+                    "type" : "boolean"
+                },
+                "evaluation_perc" : {
+                    "type" : "number",
+                    "minimum" : 0,
+                    "maximum" : 1000
+                },
+                "loss_limit" : {
+                    "type" : "number",
+                    "minimum" : 0,
+                    "maximum" : 1000
+                }
+            }
+        }
+    }
+}
