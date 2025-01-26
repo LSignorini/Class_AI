@@ -1,7 +1,9 @@
+tqdm
 jsonschema
 torch
 matplotlib
 torchvision
-sklearn
+scikit-learn
 torchvision
 tensorboard
+pytorch-model-summary
