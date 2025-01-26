@@ -1,0 +1,7 @@
+jsonschema
+torch
+matplotlib
+torchvision
+sklearn
+torchvision
+tensorboard
