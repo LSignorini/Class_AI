@@ -10,6 +10,7 @@ import torch.nn.functional as F
 import matplotlib.pyplot as plt
 import torchvision
 from torch.utils.data import DataLoader as torch_dataloader
+from tqdm import tqdm
 
 from pathlib import Path
 
@@ -53,6 +54,7 @@ class NetRunner():
         self.load_model_te = cfg_object.save_model_parameters.load_model_te
         self.evaluation_perc = cfg_object.save_model_parameters.evaluation_perc
         self.loss_limit = cfg_object.save_model_parameters.loss_limit
+        self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
         
         self.runs_path = Path('./runs')
         if clear_runs and self.runs_path.is_dir():
@@ -115,9 +117,9 @@ class NetRunner():
         #as_custom_trainset = CustomDatasetShapes(root=tr_path, transform=self.transforms)
         #as_custom_validset = CustomDatasetShapes(root=va_path, transform=self.transforms)
         #as_custom_testset = CustomDatasetShapes(root=te_path, transform=self.transforms)
-        trainset = torchvision.datasets.ImageFolder(root= os.path.join("Animal", "train"), transform=self.transforms)        
-        validset = torchvision.datasets.ImageFolder(root=os.path.join("Animal", "val"), transform=self.transforms)
-        testset = torchvision.datasets.ImageFolder(root= os.path.join("Animal", "test"), transform=self.transforms)
+        trainset = torchvision.datasets.ImageFolder(root= os.path.join('Animal', "train"), transform=self.transforms)        
+        validset = torchvision.datasets.ImageFolder(root=os.path.join('Animal', "val"), transform=self.transforms)
+        testset = torchvision.datasets.ImageFolder(root= os.path.join('Animal', "test"), transform=self.transforms)
         
         #trainset = as_custom_trainset if as_custom else as_torch_trainset
         #validset = as_custom_validset if as_custom else as_torch_validset
@@ -163,28 +165,35 @@ della rete.
             tr_running_loss = 0.0
             va_running_loss = 0.0
 
-            # Stop di addestramento. Dimensione batch size 
-            for _, data in enumerate(self.tr_loader, 0):
+            # La rete entra in modalità addestramento.
+            self.net.train()
+
+            self.net.to(self.device)
+            
+            for i, data in (pbar := tqdm(enumerate(self.tr_loader, 0), total=len(self.tr_loader.dataset) // self.batch_size, desc='')):
                 
-                # La rete entra in modalità addestramento.
-                self.net.train()
+                
                 
                 # Per ogni input tiene conto della sua etichetta.
                 inputs, labels = data
+
+                inputs = inputs.to(self.device)
+                labels = labels.to(self.device)
+
+                # Azzeramento dei gradienti.
+                self.optimizer.zero_grad()
                 
                 # L'input attraversa la rete e genera l'output.
                 outputs = self.net(inputs)
                 
                 # Calcolo della funzione di loss sulla base delle predizioni e delle etichette.
-                print(outputs.shape, labels.shape)
+                
                 loss = self.loss_fn(outputs, labels)
                 
                 for j in range(len(labels)):
-                    pred_tr.append(np.array(outputs.detach()[j]))
-                    real_tr.append(np.array(labels.detach()[j]))
+                    pred_tr.append(np.array(outputs.detach()[j].to('cpu')))
+                    real_tr.append(np.array(labels.detach()[j].to('cpu')))
                 
-                # Azzeramento dei gradienti.
-                self.optimizer.zero_grad()
 
                 # Retropropagazione del gradiente.
                 loss.backward()
@@ -196,6 +205,7 @@ della rete.
                 tr_running_loss += loss.item()
                 
                 self.writer.add_images('input training', inputs, ctr)
+                pbar.set_description(f"Loss: {tr_running_loss / (i + 1):.5f}")
                 
                 ctr += 1
             
@@ -220,13 +230,16 @@ della rete.
             self.writer.add_figure('Confusion Matrix Training', fig, epoch)
             
             plt.close()
+
+            self.net.to(self.device)
+            self.net.eval()
             
             for _, data in enumerate(self.va_loader, 0):
                 
-                self.net.eval()
-                
                 # Per ogni input tiene conto della sua etichetta.
                 inputs, labels = data
+                inputs = inputs.to(self.device)
+                labels = labels.to(self.device)
                 
                 with torch.no_grad():
                     
@@ -237,8 +250,8 @@ della rete.
                     loss = self.loss_fn(outputs, labels)
                 
                     for j in range(len(outputs)):
-                        pred_va.append(np.array(outputs.detach()[j]))
-                        real_va.append(np.array(labels.detach()[j]))
+                        pred_va.append(np.array(outputs.detach()[j].to('cpu')))
+                        real_va.append(np.array(labels.detach()[j].to('cpu')))
 
                     # Monitoraggio delle statistiche.
                     va_running_loss += loss.item()
