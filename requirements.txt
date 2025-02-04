@@ -7,3 +7,4 @@ scikit-learn
 torchvision
 tensorboard
 pytorch-model-summary
+seaborn
