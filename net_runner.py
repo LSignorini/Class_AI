@@ -15,10 +15,7 @@ from tqdm import tqdm
 
 from pathlib import Path
 
-from torch.utils.tensorboard.writer import SummaryWriter 
-#from custom_dataset_shapes import CustomDatasetShapes 
-#from visual_helper import show_image_grid 
-#from net import VGG16
+from torch.utils.tensorboard.writer import SummaryWriter
 from net import RegNet
 
 from sklearn.metrics import confusion_matrix
@@ -118,7 +115,7 @@ class NetRunner():
 
         tr_path, va_path, te_path = Path(tr_path), Path(va_path), Path(te_path)
         
-        print(tr_path, va_path, te_path)
+        #print(tr_path, va_path, te_path)
         #as_custom_trainset = CustomDatasetShapes(root=tr_path, transform=self.transforms)
         #as_custom_validset = CustomDatasetShapes(root=va_path, transform=self.transforms)
         #as_custom_testset = CustomDatasetShapes(root=te_path, transform=self.transforms)
@@ -133,7 +130,7 @@ class NetRunner():
         self.classes = trainset.classes
         self.num_classes = len(self.classes)
 
-        # Seleziona solo una porzione dei dati per il training
+        # Seleziono solo una porzione dei dati per il training
         if self.train_percentage < 1.0:
             trainset = self._sample_dataset(trainset, self.train_percentage)
 
@@ -172,9 +169,7 @@ class NetRunner():
 
     def train(self, preview: bool = False) -> None:
         """
-        Esegue l'addestramentoContinua...
-
-della rete.
+        Esegue l'addestramento della rete.
 
         Args:
             preview (bool, optional): Indica se mostrare un'anteprima dei dati. Defaults to False.
@@ -208,11 +203,12 @@ della rete.
             self.net.train()
 
             self.net.to(self.device)
+
+            # Calcolo della precisione di training
+            tr_total = 0
+            tr_correct = 0
             
             for i, data in (pbar := tqdm(enumerate(self.tr_loader, 0), total=len(self.tr_loader.dataset) // self.batch_size, desc='')):
-                
-                
-                
                 # Per ogni input tiene conto della sua etichetta.
                 inputs, labels = data
 
@@ -226,13 +222,16 @@ della rete.
                 outputs = self.net(inputs)
                 
                 # Calcolo della funzione di loss sulla base delle predizioni e delle etichette.
-                
                 loss = self.loss_fn(outputs, labels)
                 
                 for j in range(len(labels)):
                     pred_tr.append(np.array(outputs.detach()[j].to('cpu')))
                     real_tr.append(np.array(labels.detach()[j].to('cpu')))
                 
+                # Calcolo della precisione di training
+                _, predicted = torch.max(outputs.data, 1)
+                tr_total += labels.size(0)
+                tr_correct += (predicted == labels).sum().item()
 
                 # Retropropagazione del gradiente.
                 loss.backward()
@@ -249,8 +248,12 @@ della rete.
                 ctr += 1
             
             tr_loss = tr_running_loss / len(self.tr_loader)
+            tr_accuracy = 100 * tr_correct / tr_total
             self.tr_losses_x.append(epoch)
             self.tr_losses_y.append(tr_loss)
+
+            # Aggiungi precisione di training su TensorBoard
+            self.writer.add_scalars('Accuracy', {'Training Accuracy': tr_accuracy}, epoch)
 
             # Calcolo della confusion matrix utilizzando sklearn.metrics
             cm = confusion_matrix(np.array(real_tr),
@@ -267,11 +270,14 @@ della rete.
             
             # Aggiunta del grafico a TensorBoard utilizzando add_figure
             self.writer.add_figure('Confusion Matrix Training', fig, epoch)
-            
             plt.close()
 
             self.net.to(self.device)
             self.net.eval()
+
+            # Calcolo della precisione di training
+            va_total = 0
+            va_correct = 0
             
             for _, data in enumerate(self.va_loader, 0):
                 
@@ -292,6 +298,11 @@ della rete.
                         pred_va.append(np.array(outputs.detach()[j].to('cpu')))
                         real_va.append(np.array(labels.detach()[j].to('cpu')))
 
+                    # Calcolo della precisione di validazione
+                    _, predicted = torch.max(outputs.data, 1)
+                    va_total += labels.size(0)
+                    va_correct += (predicted == labels).sum().item()
+
                     # Monitoraggio delle statistiche.
                     va_running_loss += loss.item()
                     
@@ -300,8 +311,12 @@ della rete.
                 ctr_va += 1
 
             va_loss = va_running_loss / len(self.va_loader)
+            va_accuracy = 100 * va_correct / va_total
             self.va_losses_x.append(epoch)
             self.va_losses_y.append(va_loss)
+
+             # Aggiungi precisione di validazione su TensorBoard
+            self.writer.add_scalars('Accuracy', {'Validation Accuracy': va_accuracy}, epoch)
             
             # Calcolo della confusion matrix utilizzando sklearn.metrics
             cm = confusion_matrix(np.array(real_va),
@@ -332,15 +347,17 @@ della rete.
                     torch.save(self.net, self.outpath)
             
             # Implementazione dell'early stopping che interrompe l'addestramento se la loss non migliora per patience epoche consecutive
+            # Salvataggio modello se la loss di validazione è migliorata
             if va_loss < best_va_loss:
                 best_va_loss = va_loss
                 ctr_worst = 0
+                print(f"New best validation loss: {best_va_loss:.5f}")
+                torch.save(self.net.state_dict(), self.outpath_sd)
             else:
                 ctr_worst += 1
-            
-            if ctr_worst >= self.patience:
-                print('Stop training per earlyStopping')
-                break
+                if ctr_worst >= self.patience:
+                    print("Early stopping...")
+                    break
                 
         print('Finished Training.')
         print('Model saved.')
