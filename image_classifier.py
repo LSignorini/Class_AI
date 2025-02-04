@@ -7,7 +7,7 @@ if __name__ == "__main__":
     cfg_obj = check_and_get_configuration ('./config.json', './config_schema.json')
     
     # Crea un oggetto runner con cui gestire la rete, il training ed il test
-    runner = NetRunner (cfg_obj, True)
+    runner = NetRunner (cfg_obj, True, train_percentage=0.5)
     
     #In caso di training abilitato, addestra la rete sui dati di addestramento
     if cfg_obj.parameters.train:

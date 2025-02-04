@@ -9,6 +9,7 @@ import torch.optim as optim
 import torch.nn.functional as F
 import matplotlib.pyplot as plt
 import torchvision
+import random
 from torch.utils.data import DataLoader as torch_dataloader
 from tqdm import tqdm
 
@@ -31,7 +32,7 @@ class NetRunner():
     Gestisce addestramento e test della rete di classificazione.
     """
 
-    def __init__(self, cfg_object: object, clear_runs=False) -> None:
+    def __init__(self, cfg_object: object, clear_runs=False, train_percentage=1.0) -> None:
         """
         Inizializza il gestore e gli attributi necessari all'addestramento.
         
@@ -39,6 +40,10 @@ class NetRunner():
             cfg_object (object): Oggetto creato a partire dalla struttura del config.json
         """
         print("Contents of cfg_object:", cfg_object)
+
+        # Nuovo parametro per selezionare la percentuale di dati per il training
+        self.train_percentage = train_percentage
+
         # Raccolgo gli iper-parametri definiti nel config.
         self.batch_size = cfg_object.hyper_parameters.batch_size
         self.lr = cfg_object.hyper_parameters.learning_rate
@@ -127,9 +132,43 @@ class NetRunner():
         
         self.classes = trainset.classes
         self.num_classes = len(self.classes)
+
+        # Seleziona solo una porzione dei dati per il training
+        if self.train_percentage < 1.0:
+            trainset = self._sample_dataset(trainset, self.train_percentage)
+
         self.tr_loader = torch_dataloader(trainset, batch_size=self.batch_size, shuffle=True)
         self.va_loader = torch_dataloader(validset, batch_size=self.batch_size, shuffle=False)
         self.te_loader = torch_dataloader(testset, batch_size=self.batch_size, shuffle=False)
+
+    def _sample_dataset(self, dataset, percentage):
+        """
+        Seleziona una porzione del dataset basata sulla percentuale.
+        """
+        class_to_idx = dataset.class_to_idx
+        sampled_data = []
+
+        # Conta la distribuzione delle classi prima del campionamento
+        class_count_before = {class_idx: 0 for class_idx in range(len(dataset.classes))}
+        for sample in dataset.samples:
+            class_count_before[sample[1]] += 1
+        print(f"Distribuzione delle classi prima del campionamento: {class_count_before}")
+
+        # Seleziona un numero di campioni per ogni classe
+        for class_idx in range(len(dataset.classes)):
+            class_samples = [s for s in dataset.samples if s[1] == class_idx]
+            num_samples = int(len(class_samples) * percentage)
+            sampled_data.extend(random.sample(class_samples, num_samples))  # Usa random per il campionamento
+
+        # Conta la distribuzione delle classi dopo il campionamento
+        class_count_after = {class_idx: 0 for class_idx in range(len(dataset.classes))}
+        for sample in sampled_data:
+            class_count_after[sample[1]] += 1
+        print(f"Distribuzione delle classi dopo il campionamento: {class_count_after}")
+
+        # Crea un nuovo dataset con i campioni selezionati
+        sampled_dataset = torch.utils.data.Subset(dataset, [dataset.samples.index(item) for item in sampled_data])
+        return sampled_dataset
 
     def train(self, preview: bool = False) -> None:
         """
