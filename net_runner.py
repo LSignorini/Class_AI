@@ -12,6 +12,7 @@ import torchvision
 import random
 from torch.utils.data import DataLoader as torch_dataloader
 from tqdm import tqdm
+from PIL import Image
 
 from pathlib import Path
 
@@ -467,3 +468,37 @@ class NetRunner():
         for classname, correct_count in correct_pred.items():
             accuracy = 100 * float(correct_count) / total_pred[classname]
             print(f'Class accuracy: {classname:5s} is {accuracy:.1f} %')
+
+    def predict(self, image_path, model_path):
+
+        self.class_names = ["gatto", "cane", "elefante", "cavallo", "leone"]
+
+        # Carica il modello salvato
+        self.net.load_state_dict(torch.load(model_path, map_location=torch.device('cpu')))
+        self.net.eval()
+        
+        # Trasformazioni per l'immagine
+        transform = torchvision.transforms.Compose([
+            torchvision.transforms.Resize((224, 224)),
+            torchvision.transforms.ToTensor(),
+            torchvision.transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+        ])
+        
+        # Carica l'immagine
+        image = Image.open(image_path).convert('RGB')
+        image = transform(image)
+        image = image.unsqueeze(0)  # Aggiunge una dimensione batch
+        
+        # Inferenza
+        with torch.no_grad():
+            output = self.net(image)
+            probabilities = torch.nn.functional.softmax(output[0], dim=0)
+            predicted_class = torch.argmax(probabilities).item()
+
+        predicted_class_name = self.class_names[predicted_class]
+
+        print(f"Classe predetta: {predicted_class_name}")
+        print(f"Probabilità: {probabilities}")
+        
+        return predicted_class, probabilities.numpy()
+

@@ -9,3 +9,4 @@ tensorboard
 pytorch-model-summary
 seaborn
 random
+PIL
