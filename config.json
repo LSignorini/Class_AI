@@ -8,16 +8,17 @@
     "parameters": {
         "train": true,
         "test": true,
-        "show_preview": false
+        "show_preview": false,
+        "predict" : false
     },
     "hyper_parameters": {
-        "batch_size": 20,
-        "epochs": 250,
-        "learning_rate": 0.0001,
-        "momentum": 0.9
+        "batch_size": 10,
+        "epochs": 5,
+        "learning_rate": 0.00025,
+        "momentum": 1
     },    
     "early_stop_parameters": {
-        "patience": 20
+        "patience": 10
     },
     "save_model_parameters": {
         "save_model": true,
@@ -25,6 +26,10 @@
         "load_model_te": true,
         "evaluation_perc": 0.2,
         "loss_limit": 1.5
+    },
+    "predict_parameters":{
+        "path_image": "./Animal/test/lion/7QGLM9BH9Z40.jpg",
+        "path_model": "./out/trained_model_sd.pth"
     }
         
 }

@@ -1,6 +1,6 @@
 {
     "type" : "object",
-    "required" : ["io", "parameters", "hyper_parameters", "early_stop_parameters", "save_model_parameters"],
+    "required" : ["io", "parameters", "hyper_parameters", "early_stop_parameters", "save_model_parameters", "predict_parameters"],
     "properties" : {
         "io" : {
             "type" : "object",
@@ -26,7 +26,8 @@
             "properties" : {
                 "train" : {"type" : "boolean"},
                 "test" : {"type" : "boolean"},
-                "show_preview" : {"type" : "boolean"}
+                "show_preview" : {"type" : "boolean"},
+                "predict": {"type" : "boolean"}
             }
         },
         "hyper_parameters" : {
@@ -102,6 +103,17 @@
                     "minimum" : 0,
                     "maximum" : 1000
                 }
+            }
+        },
+        "predict_parameters" : {
+            "type" : "object",
+            "required" : [
+                "path_image",
+                "path_model"
+            ],
+            "properties" : {
+                "path_image" : {"type" : "string"},
+                "path_model" : {"type" : "string"}
             }
         }
     }

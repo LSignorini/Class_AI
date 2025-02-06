@@ -394,7 +394,6 @@ class NetRunner():
 
         ctr = 0
 
-        embeddings_list = None
         images_list = None
         labels_list = None
         
@@ -412,18 +411,16 @@ class NetRunner():
                 images, labels = data
 
                 # I dati passano attraverso la rete e generano l'output.
-                outputs, embeddings = net(images)
+                outputs = net(images)
 
                 for j in range(len(labels)):
                     pred_te.append(np.array(outputs.detach()[j]))
                     real_te.append(np.array(labels.detach()[j]))
                 
                 if i == 0:
-                    embeddings_list = embeddings
                     images_list = images
                     labels_list = labels
                 else:
-                    embeddings_list = torch.cat((embeddings_list, embeddings), dim=0)
                     images_list = torch.cat((images_list, images), dim=0)
                     labels_list = torch.cat((labels_list, labels), dim=0)
                 
@@ -442,10 +439,6 @@ class NetRunner():
                 self.writer.add_images('images test', images, ctr)
 
                 ctr += 1
-
-        embs = torch.mean(embeddings_list, 1)
-        class_labels = [str(lab.item()) for lab in labels_list]
-        self.writer.add_embedding(embs.reshape(embs.shape[0], -1), metadata=class_labels, label_img=images_list) 
         
         # Calcolo della confusion matrix utilizzando sklearn.metrics
         cm = confusion_matrix(np.array(real_te),
